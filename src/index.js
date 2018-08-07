@@ -4,7 +4,7 @@ import { SimpleScene } from './scenes/simpleScene'
 const gameConfig = {
   width: 680,
   height: 400,
-  scene: SimpleScene
+  scene: SimpleScene,
 }
 
-new Phaser.Game(gameConfig)
+const game = new Phaser.Game(gameConfig)
