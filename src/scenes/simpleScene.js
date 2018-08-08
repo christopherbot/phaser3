@@ -14,6 +14,28 @@ export class SimpleScene extends Phaser.Scene {
     melon.disableBody(true, true)
     this.score += 1
     this.text.setText(`${this.gameTitle} Score: ${this.score}`)
+
+    if (this.melons.countActive(true) === 0) {
+      this.melons.children.iterate((child) => {
+        // reset the y position of each melon to 0
+        child.enableBody(true, child.x, 0, true, true)
+      })
+
+      const bombPosition = (this.player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400)
+
+      const bomb = this.bombs.create(bombPosition, 16, 'bomb')
+      bomb.setBounce(1)
+      bomb.setCollideWorldBounds(true)
+      bomb.setVelocity(Phaser.Math.Between(-200, 200), 20)
+      bomb.allowGravity = false
+    }
+  }
+
+  hitBomb(player, bomb) {
+    this.physics.pause()
+    this.player.setTint(0xff0000)
+    this.player.anims.play('turn')
+    this.gameOver = true
   }
 
   preload() {
@@ -25,8 +47,10 @@ export class SimpleScene extends Phaser.Scene {
     )
     this.load.image('star', 'assets/star.png')
     this.load.image('melon', 'assets/melon.png')
+    this.load.image('bomb', 'assets/bomb.png')
 
     this.score = 0
+    this.gameOver = false
   }
 
   create() {
@@ -96,6 +120,10 @@ export class SimpleScene extends Phaser.Scene {
     this.physics.add.collider(this.melons, this.platforms)
 
     this.physics.add.overlap(this.player, this.melons, this.collectMelon, null, this)
+
+    this.bombs = this.physics.add.group()
+    this.physics.add.collider(this.bombs, this.platforms)
+    this.physics.add.collider(this.player, this.bombs, this.hitBomb, null, this)
   }
 
   update() {
