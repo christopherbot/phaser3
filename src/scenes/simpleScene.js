@@ -3,6 +3,10 @@ export class SimpleScene extends Phaser.Scene {
     return 'WaTeR u DoInG?'
   }
 
+  get gameOverCopy() {
+    return 'Game Over\nPress any key to play again'
+  }
+
   get gameWidth() {
     return this.sys.game.config.width
   }
@@ -11,14 +15,52 @@ export class SimpleScene extends Phaser.Scene {
     return this.sys.game.config.height
   }
 
-  addGameText() {
+  get playerPositionX() {
+    return 100
+  }
+
+  get playerPositionY() {
+    return 450
+  }
+
+  get anyGameKeyIsPressed() {
+    return Object.values(this.cursors).some(({ isDown }) => isDown)
+  }
+
+  addMainText() {
     // default font-family is Courier
-    this.text = this.add.text(
+    this.mainText = this.add.text(
       this.gameWidth / 2,
       this.gameHeight - 20,
       `${this.gameTitle} Score: 0`,
       { fill: '#0F0' }
     ).setOrigin(0.5, 1)
+  }
+
+  updateScore(newScore) {
+    // if a value is explictly passed, set the score to that value
+    this.score = typeof newScore === 'number' ? newScore : this.score + 1
+    this.mainText.setText(`${this.gameTitle} Score: ${this.score}`)
+  }
+
+  addGameOverText() {
+    if (this.gameOverText) {
+      this.gameOverText.setText(this.gameOverCopy)
+
+      return
+    }
+
+    this.gameOverText = this.add.text(
+      this.gameWidth / 2,
+      this.gameHeight / 2,
+      this.gameOverCopy,
+      { fill: '#0F0' }
+    ).setOrigin(0.5, 0.5)
+  }
+
+  removeGameOverText() {
+    // this.gameOverText.destroy()
+    this.gameOverText.setText('')
   }
 
   addBackground() {
@@ -36,7 +78,7 @@ export class SimpleScene extends Phaser.Scene {
   }
 
   addPlayer() {
-    this.player = this.physics.add.sprite(100, 450, 'dude')
+    this.player = this.physics.add.sprite(this.playerPositionX, this.playerPositionY, 'dude')
     this.player.setBounce(0.2)
     this.player.setCollideWorldBounds(true)
     this.player.body.setGravityY(30)
@@ -62,6 +104,11 @@ export class SimpleScene extends Phaser.Scene {
     })
   }
 
+  resetPlayer() {
+    this.player.clearTint()
+    this.player.enableBody(true, this.playerPositionX, this.playerPositionY, true, true)
+  }
+
   addStarDecorations() {
     this.add.image(0, 0, 'star').setOrigin(0, 0)
     this.add.image(this.gameWidth, 0, 'star').setOrigin(1, 0)
@@ -82,20 +129,15 @@ export class SimpleScene extends Phaser.Scene {
     })
   }
 
-  addBombs() {
-    this.bombs = this.physics.add.group()
-  }
-
-  updateScore() {
-    this.score += 1
-    this.text.setText(`${this.gameTitle} Score: ${this.score}`)
-  }
-
   resetMelons() {
     this.melons.children.iterate((child) => {
       // reset the y position of each melon to 0
       child.enableBody(true, child.x, 0, true, true)
     })
+  }
+
+  addBombs() {
+    this.bombs = this.physics.add.group()
   }
 
   generateBomb(player) {
@@ -106,6 +148,14 @@ export class SimpleScene extends Phaser.Scene {
     bomb.setCollideWorldBounds(true)
     bomb.setVelocity(Phaser.Math.Between(-200, 200), 20)
     bomb.allowGravity = false
+  }
+
+  resetBombs() {
+    this.bombs.children.iterate((child) => {
+      child && child.destroy()
+    })
+
+    this.bombs.clear(true)
   }
 
   collectMelon(player, melon) {
@@ -126,6 +176,16 @@ export class SimpleScene extends Phaser.Scene {
     this.gameOver = true
   }
 
+  resetGame() {
+    this.updateScore(0)
+    this.removeGameOverText()
+    this.resetPlayer()
+    this.resetMelons()
+    this.resetBombs()
+    this.gameOver = false
+    this.physics.resume()
+  }
+
   preload() {
     this.load.image('bomb', 'assets/bomb.png')
     this.load.image('melon', 'assets/melon.png')
@@ -143,7 +203,7 @@ export class SimpleScene extends Phaser.Scene {
     this.addBackground()
     this.addPlatforms()
     this.addStarDecorations()
-    this.addGameText()
+    this.addMainText()
     this.addPlayer()
     this.addMelons()
     this.addBombs()
@@ -178,6 +238,13 @@ export class SimpleScene extends Phaser.Scene {
 
     if (this.cursors.up.isDown && this.player.body.touching.down) {
       this.player.setVelocityY(-330)
+    }
+
+    if (this.gameOver) {
+      this.addGameOverText()
+      if (this.anyGameKeyIsPressed) {
+        this.resetGame()
+      }
     }
   }
 }
