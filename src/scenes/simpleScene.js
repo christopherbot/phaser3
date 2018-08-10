@@ -7,6 +7,14 @@ export class SimpleScene extends Phaser.Scene {
     return 'Game Over\nPress any key to play again'
   }
 
+  get pauseCopy() {
+    return 'Press [space] to pause'
+  }
+
+  get unpauseCopy() {
+    return 'Press [space] to unpause'
+  }
+
   get gameWidth() {
     return this.sys.game.config.width
   }
@@ -30,10 +38,18 @@ export class SimpleScene extends Phaser.Scene {
   addMainText() {
     // default font-family is Courier
     this.mainText = this.add.text(
-      this.gameWidth / 2,
+      this.gameWidth / 5,
       this.gameHeight - 20,
       `${this.gameTitle} Score: 0`,
       { fill: '#0F0' }
+    ).setOrigin(0.5, 1)
+  }
+
+  addPauseText() {
+    this.pauseText = this.add.text(
+      this.gameWidth * 4 / 5,
+      this.gameHeight - 20,
+      this.pauseCopy,
     ).setOrigin(0.5, 1)
   }
 
@@ -186,6 +202,20 @@ export class SimpleScene extends Phaser.Scene {
     this.physics.resume()
   }
 
+  setPause() {
+    if (this.paused) {
+      this.pauseText.setText(this.pauseCopy)
+      this.anims.resumeAll()
+      this.physics.resume()
+    } else {
+      this.pauseText.setText(this.unpauseCopy)
+      this.anims.pauseAll()
+      this.physics.pause()
+    }
+
+    this.paused = !this.paused
+  }
+
   preload() {
     this.load.image('bomb', 'assets/bomb.png')
     this.load.image('melon', 'assets/melon.png')
@@ -197,6 +227,7 @@ export class SimpleScene extends Phaser.Scene {
 
     this.score = 0
     this.gameOver = false
+    this.paused = false
   }
 
   create() {
@@ -204,6 +235,7 @@ export class SimpleScene extends Phaser.Scene {
     this.addPlatforms()
     this.addStarDecorations()
     this.addMainText()
+    this.addPauseText()
     this.addPlayer()
     this.addMelons()
     this.addBombs()
@@ -219,6 +251,21 @@ export class SimpleScene extends Phaser.Scene {
   }
 
   update() {
+    if (this.gameOver) {
+      this.addGameOverText()
+      if (this.anyGameKeyIsPressed) {
+        this.resetGame()
+      }
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.cursors.space)) {
+      this.setPause()
+    }
+
+    if (this.paused) {
+      return
+    }
+
     if (this.cursors.down.isDown && this.cursors.right.isDown) {
       this.player.setVelocityX(320)
       this.player.anims.play('left', true)
@@ -238,13 +285,6 @@ export class SimpleScene extends Phaser.Scene {
 
     if (this.cursors.up.isDown && this.player.body.touching.down) {
       this.player.setVelocityY(-330)
-    }
-
-    if (this.gameOver) {
-      this.addGameOverText()
-      if (this.anyGameKeyIsPressed) {
-        this.resetGame()
-      }
     }
   }
 }
