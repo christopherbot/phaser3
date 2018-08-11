@@ -3,6 +3,18 @@ export class SimpleScene extends Phaser.Scene {
     return 'WaTeR u DoInG?'
   }
 
+  get scoreCopy() {
+    return `Score: ${this.score}`
+  }
+
+  get highScoreFromStorage() {
+    return localStorage.getItem('highScore')
+  }
+
+  get highScoreCopy() {
+    return `High Score: ${this.highScore}`
+  }
+
   get gameOverCopy() {
     return 'Game Over\nPress any key to play again'
   }
@@ -35,14 +47,36 @@ export class SimpleScene extends Phaser.Scene {
     return Object.values(this.cursors).some(({ isDown }) => isDown)
   }
 
-  addMainText() {
+  setHighScore() {
+    this.highScore = this.score
+    this.highScoreText.setText(this.highScoreCopy)
+    localStorage.setItem('highScore', this.highScore)
+  }
+
+  addTitleText() {
     // default font-family is Courier
-    this.mainText = this.add.text(
-      this.gameWidth / 5,
+    this.add.text(
+      this.gameWidth / 2,
       this.gameHeight - 20,
-      `${this.gameTitle} Score: 0`,
+      this.gameTitle,
       { fill: '#0F0' }
     ).setOrigin(0.5, 1)
+  }
+
+  addScoreText() {
+    this.scoreText = this.add.text(
+      this.gameWidth / 5,
+      this.gameHeight - 40,
+      this.scoreCopy,
+    ).setOrigin(0.5, 1)
+  }
+
+  addHighScoreText() {
+    this.highScoreText = this.add.text(
+      this.gameWidth / 5,
+      this.gameHeight - 20,
+      this.highScoreCopy,
+    ).setOrigin(0.5, 1) 
   }
 
   addPauseText() {
@@ -56,7 +90,7 @@ export class SimpleScene extends Phaser.Scene {
   updateScore(newScore) {
     // if a value is explictly passed, set the score to that value
     this.score = typeof newScore === 'number' ? newScore : this.score + 1
-    this.mainText.setText(`${this.gameTitle} Score: ${this.score}`)
+    this.scoreText.setText(this.scoreCopy)
   }
 
   addGameOverText() {
@@ -226,6 +260,7 @@ export class SimpleScene extends Phaser.Scene {
     this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 })
 
     this.score = 0
+    this.highScore = this.highScoreFromStorage || 0
     this.gameOver = false
     this.paused = false
   }
@@ -234,7 +269,9 @@ export class SimpleScene extends Phaser.Scene {
     this.addBackground()
     this.addPlatforms()
     this.addStarDecorations()
-    this.addMainText()
+    this.addTitleText()
+    this.addScoreText()
+    this.addHighScoreText()
     this.addPauseText()
     this.addPlayer()
     this.addMelons()
@@ -251,6 +288,10 @@ export class SimpleScene extends Phaser.Scene {
   }
 
   update() {
+    if (this.score > this.highScore) {
+      this.setHighScore()
+    }
+
     if (this.gameOver) {
       this.addGameOverText()
       if (this.anyGameKeyIsPressed) {
